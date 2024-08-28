@@ -5,6 +5,8 @@ import (
 	"log"
 	"net/http"
 	"time"
+
+	"github.com/awalker125/go-api/person"
 )
 
 type Middleware func(http.HandlerFunc) http.HandlerFunc
@@ -63,5 +65,9 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	http.HandleFunc("/", Chain(Hello, Method("GET"), Logging()))
+	handler := &person.PersonHandler{}
+	handler.Name = "bill"
+	http.HandleFunc("/person", handler.ServeHTTP)
+	http.HandleFunc("/person2", Chain(handler.ServeHTTP, Method("GET"), Logging()))
 	http.ListenAndServe(":8080", nil)
 }
