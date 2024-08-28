@@ -4,70 +4,29 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"time"
 
-	"github.com/awalker125/go-api/person"
+	"github.com/awalker125/go-api/handlers/person"
+	"github.com/awalker125/go-api/middleware"
 )
-
-type Middleware func(http.HandlerFunc) http.HandlerFunc
-
-// Logging logs all requests with its path and the time it took to process
-func Logging() Middleware {
-
-	// Create a new Middleware
-	return func(f http.HandlerFunc) http.HandlerFunc {
-
-		// Define the http.HandlerFunc
-		return func(w http.ResponseWriter, r *http.Request) {
-
-			// Do middleware things
-			start := time.Now()
-			defer func() { log.Println(r.URL.Path, time.Since(start)) }()
-
-			// Call the next middleware/handler in chain
-			f(w, r)
-		}
-	}
-}
-
-// Method ensures that url can only be requested with a specific method, else returns a 400 Bad Request
-func Method(m string) Middleware {
-
-	// Create a new Middleware
-	return func(f http.HandlerFunc) http.HandlerFunc {
-
-		// Define the http.HandlerFunc
-		return func(w http.ResponseWriter, r *http.Request) {
-
-			// Do middleware things
-			if r.Method != m {
-				http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
-				return
-			}
-
-			// Call the next middleware/handler in chain
-			f(w, r)
-		}
-	}
-}
-
-// Chain applies middlewares to a http.HandlerFunc
-func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
-	for _, m := range middlewares {
-		f = m(f)
-	}
-	return f
-}
 
 func Hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "hello world")
 }
 
 func main() {
-	http.HandleFunc("/", Chain(Hello, Method("GET"), Logging()))
-	handler := &person.PersonHandler{}
-	handler.Name = "bill"
+
+	mux := http.NewServeMux()
+
+	mux.HandleFunc("/", middleware.Chain(Hello, middleware.Method("GET"), middleware.Logging()))
+
+	handler := person.PersonHandler{Name: "bob"}
+
+	chain1 := middleware.Chain(handler.ServeHTTP, middleware.Method("GET"), middleware.Logging())
+
+	mux.Handle("/person", chain1)
+
 	http.HandleFunc("/person", handler.ServeHTTP)
-	http.HandleFunc("/person2", Chain(handler.ServeHTTP, Method("GET"), Logging()))
-	http.ListenAndServe(":8080", nil)
+	http.HandleFunc("/person2", middleware.Chain(handler.ServeHTTP, middleware.Method("GET"), middleware.Logging()))
+	log.Println("Starting server on 8080...")
+	http.ListenAndServe(":8080", mux)
 }
