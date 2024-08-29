@@ -55,7 +55,3 @@ func Chain(f http.HandlerFunc, middlewares ...Middleware) http.HandlerFunc {
 	}
 	return f
 }
-
-func Chain2(h http.Handler, middlewares ...Middleware) http.Handler {
-	return Chain(h.ServeHTTP, middlewares...)
-}

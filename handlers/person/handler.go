@@ -29,3 +29,10 @@ func TimeHandler(format string) http.Handler {
 func TimeHandler2(format string) http.HandlerFunc {
 	return TimeHandler(format).ServeHTTP
 }
+
+func TimeHandler3(format string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		tm := time.Now().Format(format)
+		w.Write([]byte("The time is: " + tm))
+	}
+}

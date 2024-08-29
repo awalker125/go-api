@@ -32,3 +32,61 @@ air init
 ```
 
 Then
+
+```
+air
+```
+
+### API Tests
+
+```bash
+
+
+```
+
+### Swagger Docs
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+```
+
+Add general info to main.go e.g
+
+```golang
+// @title           Example Cars API
+// @version         1.0
+// @description     This is a sample server celler server.
+// @termsOfService  http://swagger.io/terms/
+
+// @contact.name   API Support
+// @contact.url    http://www.swagger.io/support
+// @contact.email  support@swagger.io
+
+// @license.name  Apache 2.0
+// @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host      localhost:8080
+// @BasePath  /api/v1
+
+// @securityDefinitions.basic  BasicAuth
+
+// @externalDocs.description  OpenAPI
+// @externalDocs.url          https://swagger.io/resources/open-api/
+```
+
+Then
+
+```bash
+
+swag init
+```
+
+This will create the docs folder.
+
+Then run
+
+```bash
+go get -u github.com/swaggo/http-swagger/v2
+```
+
+Then see <https://github.com/swaggo/http-swagger/pull/116/files>
