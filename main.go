@@ -8,6 +8,7 @@ import (
 
 	"github.com/awalker125/go-api/handlers/cars"
 	"github.com/awalker125/go-api/handlers/home"
+	"github.com/awalker125/go-api/helpers"
 	"github.com/awalker125/go-api/middleware"
 	"github.com/awalker125/go-api/store"
 
@@ -44,7 +45,9 @@ func main() {
 
 	mux := http.NewServeMux()
 
-	uri, err := url.Parse("http://localhost:1323/api/v3")
+	publicUrl := helpers.GetEnv("GO_API_PUBLIC_URL", "http://localhost:8080/v1")
+
+	uri, err := url.Parse(publicUrl)
 	if err != nil {
 		panic(err)
 	}
@@ -52,15 +55,9 @@ func main() {
 	mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),                        // The url pointing to API definition
 		httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel), // Models will not be expanded
-		httpSwagger.BeforeScript(swaggerBeforeScriptJs),
-		httpSwagger.Plugins([]string{"UrlMutatorPlugin"}),
-		httpSwagger.UIConfig(map[string]string{
-			"onComplete": fmt.Sprintf(`() => {
-    window.ui.setScheme('%s');
-    window.ui.setHost('%s');
-    window.ui.setBasePath('%s');
-  }`, uri.Scheme, uri.Host, uri.Path),
-		}),
+		httpSwagger.BeforeScript(helpers.SwaggerBeforeScriptJs),
+		httpSwagger.Plugins(helpers.UrlMutatorPlugin()),
+		httpSwagger.UIConfig(helpers.SwaggerUIConfig(uri)),
 	))
 
 	mux.HandleFunc("/", middleware.Chain(home.HomeHandler, middleware.Method("GET"), middleware.Logging()))
@@ -75,27 +72,3 @@ func main() {
 	log.Println("Starting server on 8080...")
 	http.ListenAndServe(":8080", mux)
 }
-
-const swaggerBeforeScriptJs = `const UrlMutatorPlugin = (system) => ({
-	rootInjects: {
-	  setScheme: (scheme) => {
-		const jsonSpec = system.getState().toJSON().spec.json;
-		const schemes = Array.isArray(scheme) ? scheme : [scheme];
-		const newJsonSpec = Object.assign({}, jsonSpec, { schemes });
-  
-		return system.specActions.updateJsonSpec(newJsonSpec);
-	  },
-	  setHost: (host) => {
-		const jsonSpec = system.getState().toJSON().spec.json;
-		const newJsonSpec = Object.assign({}, jsonSpec, { host });
-  
-		return system.specActions.updateJsonSpec(newJsonSpec);
-	  },
-	  setBasePath: (basePath) => {
-		const jsonSpec = system.getState().toJSON().spec.json;
-		const newJsonSpec = Object.assign({}, jsonSpec, { basePath });
-  
-		return system.specActions.updateJsonSpec(newJsonSpec);
-	  }
-	}
-  });`
