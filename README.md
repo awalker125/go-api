@@ -90,3 +90,5 @@ go get -u github.com/swaggo/http-swagger/v2
 ```
 
 Then see <https://github.com/swaggo/http-swagger/pull/116/files>
+
+Full example [here](https://github.com/swaggo/http-swagger)

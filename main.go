@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 
 	"github.com/awalker125/go-api/handlers/cars"
 	"github.com/awalker125/go-api/handlers/home"
@@ -32,7 +33,7 @@ func Hello(w http.ResponseWriter, r *http.Request) {
 // @license.url   http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host      localhost:8080
-// @BasePath  /api/v1
+// @BasePath  /v1
 
 // @securityDefinitions.basic  BasicAuth
 
@@ -43,9 +44,23 @@ func main() {
 
 	mux := http.NewServeMux()
 
+	uri, err := url.Parse("http://localhost:1323/api/v3")
+	if err != nil {
+		panic(err)
+	}
+
 	mux.Handle("/swagger/", httpSwagger.Handler(
 		httpSwagger.URL("/swagger/doc.json"),                        // The url pointing to API definition
 		httpSwagger.DefaultModelsExpandDepth(httpSwagger.HideModel), // Models will not be expanded
+		httpSwagger.BeforeScript(swaggerBeforeScriptJs),
+		httpSwagger.Plugins([]string{"UrlMutatorPlugin"}),
+		httpSwagger.UIConfig(map[string]string{
+			"onComplete": fmt.Sprintf(`() => {
+    window.ui.setScheme('%s');
+    window.ui.setHost('%s');
+    window.ui.setBasePath('%s');
+  }`, uri.Scheme, uri.Host, uri.Path),
+		}),
 	))
 
 	mux.HandleFunc("/", middleware.Chain(home.HomeHandler, middleware.Method("GET"), middleware.Logging()))
@@ -54,23 +69,33 @@ func main() {
 
 	h := cars.NewCarsHandler(s)
 
-	// h := cars.CarsHandler{Make: "ford", }
-	mux.HandleFunc("/cars", middleware.Chain(h.ServeHTTP, middleware.Logging()))
-	mux.HandleFunc("/cars/", middleware.Chain(h.ServeHTTP, middleware.Logging()))
+	mux.HandleFunc("/v1/cars", middleware.Chain(h.ServeHTTP, middleware.Logging()))
+	mux.HandleFunc("/v1/cars/", middleware.Chain(h.ServeHTTP, middleware.Logging()))
 
-	// handler := person.PersonHandler{Name: "bob"}
-	// handler.Name = "bill"
-
-	// chain1 := middleware.Chain(handler.ServeHTTP, middleware.Method("GET"), middleware.Logging())
-	// chain2 := middleware.Chain(person.Hello2, middleware.Method("GET"), middleware.Logging())
-	// chain3 := middleware.Chain(person.TimeHandler(time.RFC1123).ServeHTTP, middleware.Method("GET"), middleware.Logging())
-	// chain4 := middleware.Chain(person.TimeHandler2(time.RFC1123), middleware.Method("GET"), middleware.Logging())
-	// chain5 := middleware.Chain(person.TimeHandler3(time.RFC1123), middleware.Method("GET"), middleware.Logging())
-	// mux.Handle("/person", chain1)
-	// mux.Handle("/person2", chain2)
-	// mux.Handle("/time", chain3)
-	// mux.Handle("/time2", chain4)
-	// mux.Handle("/time3", chain5)
 	log.Println("Starting server on 8080...")
 	http.ListenAndServe(":8080", mux)
 }
+
+const swaggerBeforeScriptJs = `const UrlMutatorPlugin = (system) => ({
+	rootInjects: {
+	  setScheme: (scheme) => {
+		const jsonSpec = system.getState().toJSON().spec.json;
+		const schemes = Array.isArray(scheme) ? scheme : [scheme];
+		const newJsonSpec = Object.assign({}, jsonSpec, { schemes });
+  
+		return system.specActions.updateJsonSpec(newJsonSpec);
+	  },
+	  setHost: (host) => {
+		const jsonSpec = system.getState().toJSON().spec.json;
+		const newJsonSpec = Object.assign({}, jsonSpec, { host });
+  
+		return system.specActions.updateJsonSpec(newJsonSpec);
+	  },
+	  setBasePath: (basePath) => {
+		const jsonSpec = system.getState().toJSON().spec.json;
+		const newJsonSpec = Object.assign({}, jsonSpec, { basePath });
+  
+		return system.specActions.updateJsonSpec(newJsonSpec);
+	  }
+	}
+  });`
