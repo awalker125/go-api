@@ -2,6 +2,8 @@ package cars
 
 import (
 	"encoding/json"
+	"fmt"
+	"log"
 	"net/http"
 	"regexp"
 
@@ -16,8 +18,8 @@ type CarsHandler struct {
 }
 
 var (
-	CarRe       = regexp.MustCompile(`^/cars/*$`)
-	CarReWithID = regexp.MustCompile(`^/cars/([a-z0-9]+(?:-[a-z0-9]+)+)$`)
+	CarRe       = regexp.MustCompile(`^/v1/cars/*$`)
+	CarReWithID = regexp.MustCompile(`^/v1/cars/([a-z0-9]+(?:-[a-z0-9]+)+)$`)
 )
 
 func NewCarsHandler(s store.CarStore) *CarsHandler {
@@ -29,8 +31,11 @@ func NewCarsHandler(s store.CarStore) *CarsHandler {
 func (h *CarsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// w.Write([]byte(fmt.Sprintf("This is %s cars home page", h.Make)))
 
+	log.Printf("In handler %s", r.Method)
+
 	switch {
 	case r.Method == http.MethodPost && CarRe.MatchString(r.URL.Path):
+		log.Println("In handler")
 		h.CreateCar(w, r)
 		return
 	case r.Method == http.MethodGet && CarRe.MatchString(r.URL.Path):
@@ -50,7 +55,21 @@ func (h *CarsHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// CreateCar example
+//
+//	@Summary		Add a new car
+//	@Description	Create a car
+//	@ID				post-car
+//	@Accept			json
+//	@Produce		json
+//	@Param			car	body		cars.Cars		true	"Car"
+//	@Success		200	{object}	cars.Cars		"this is a comment"
+//	@Failure		400	{object}	web.APIError	"We need ID!!"
+//	@Failure		404	{object}	web.APIError	"Can not find ID"
+//	@Router			/cars/ [post]
 func (h *CarsHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
+
+	log.Println("In handler")
 
 	// Recipe object that will be populated from JSON payload
 	var car cars.Cars
@@ -61,14 +80,25 @@ func (h *CarsHandler) CreateCar(w http.ResponseWriter, r *http.Request) {
 
 	// Convert the name of the recipe into URL friendly string
 	resourceID := slug.Make(car.Model)
+
+	log.Println("resourceID %s", resourceID)
 	// Call the store to add the recipe
 	if err := h.store.Add(resourceID, car); err != nil {
 		InternalServerErrorHandler(w, r)
 		return
 	}
 
+	jsonBytes, err := json.Marshal(car)
+
+	log.Print(fmt.Sprintf("%s", jsonBytes))
+
+	if err != nil {
+		InternalServerErrorHandler(w, r)
+		return
+	}
 	// Set the status code to 200
 	w.WriteHeader(http.StatusOK)
+	w.Write(jsonBytes)
 
 }
 

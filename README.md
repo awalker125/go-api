@@ -2,6 +2,15 @@
 
 Hello World REST API in golang
 
+## TL;DR
+
+If already setup
+
+```bash
+air
+http://localhost:8080/swagger/
+```
+
 ## Repo setup
 
 ```bash
@@ -40,11 +49,19 @@ air
 ### API Tests
 
 ```bash
-
-
+curl -X 'POST'   'http://localhost:8080/v1/cars/'   -H 'accept: application/json'   -H 'Content-Type: application/json'   -d '{
+  "model": "string",
+  "parts": [
+    {
+      "name": "string"
+    }
+  ]
+}'
 ```
 
 ### Swagger Docs
+
+Full docs [here](https://github.com/swaggo/swag)
 
 ```bash
 go install github.com/swaggo/swag/cmd/swag@latest

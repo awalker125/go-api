@@ -1,4 +1,28 @@
-basePath: /api/v1
+basePath: /v1
+definitions:
+  cars.Cars:
+    properties:
+      model:
+        type: string
+      parts:
+        items:
+          $ref: '#/definitions/cars.Part'
+        type: array
+    type: object
+  cars.Part:
+    properties:
+      name:
+        type: string
+    type: object
+  web.APIError:
+    properties:
+      created_at:
+        type: string
+      error_code:
+        type: integer
+      error_message:
+        type: string
+    type: object
 externalDocs:
   description: OpenAPI
   url: https://swagger.io/resources/open-api/
@@ -15,7 +39,36 @@ info:
   termsOfService: http://swagger.io/terms/
   title: Example Cars API
   version: "1.0"
-paths: {}
+paths:
+  /cars/:
+    post:
+      consumes:
+      - application/json
+      description: Create a car
+      operationId: post-car
+      parameters:
+      - description: Car
+        in: body
+        name: car
+        required: true
+        schema:
+          $ref: '#/definitions/cars.Cars'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: this is a comment
+          schema:
+            $ref: '#/definitions/cars.Cars'
+        "400":
+          description: We need ID!!
+          schema:
+            $ref: '#/definitions/web.APIError'
+        "404":
+          description: Can not find ID
+          schema:
+            $ref: '#/definitions/web.APIError'
+      summary: Add a new car
 securityDefinitions:
   BasicAuth:
     type: basic
