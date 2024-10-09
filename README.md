@@ -109,3 +109,11 @@ go get -u github.com/swaggo/http-swagger/v2
 Then see <https://github.com/swaggo/http-swagger/pull/116/files>
 
 Full example [here](https://github.com/swaggo/http-swagger)
+
+## Authentication/Authoiazion
+
+Plan is to use <https://github.com/auth0/go-jwt-middleware/blob/master/examples/http-jwks-example/main.go>
+
+See <https://github.com/auth0/go-jwt-middleware/tree/master>
+
+Seems reasonably well maintained
